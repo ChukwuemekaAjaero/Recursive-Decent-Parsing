@@ -3,9 +3,9 @@ package com.ll1parser;
 import java.io.*;
 import java.util.ArrayList;
 
-public class Main {
+public class RecursiveDecentParsing {
 
-    private static String token;
+    private static String token = ""; //Creates an empty string to store the values of the tokens.
     private static ArrayList<String> tokens;
 
     static {
@@ -36,6 +36,30 @@ public class Main {
         }
 
         return tokenList;
+
+    }
+
+    public String getNextToken(){
+        String line = "";
+
+        try {
+
+            line = br.readLine();
+
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return line!=null?line: "";
+        /*
+        Note: return line!=null?line: ""; <- That is equivalent to:
+        if(line!=null){
+         return line;
+        } else {
+         return "";
+        }
+         */
 
     }
 
@@ -72,6 +96,21 @@ for(int j = 0; j <tokens.size(); j++){
 
 
 
+    }
+
+    public String getNextToken(){
+        String line = "";
+
+        try {
+
+            line = br.readLine();
+
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return line!=null?line: "";
     }
 
     private static boolean expr(){
@@ -180,7 +219,7 @@ return OK;
 else return ERROR;
 */
         if(token.equals("num")){
-            token = tokens.get(i);//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
+            token = getNextToken();//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
             return true;
         } else if(token.equals("id")){
             token = tokens.get(i);//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
