@@ -1,44 +1,34 @@
 package com.ll1parser;
 
 import java.io.*;
-import java.util.ArrayList;
+
+/*
+This is a solution to Exercise 2 from Assignment 3 for the Software Construction
+Assignment 3.
+ */
 
 public class RecursiveDecentParsing {
 
-    private static String token = ""; //Creates an empty string to store the values of the tokens.
-    private static ArrayList<String> tokens;
+    private String token = " ";  //This will store the value of the current token.
+    private BufferedReader br;
 
-    static {
+    /*
+    Recursive Decent Parser constructor which takes a file as its parameter.
+    */
+    public RecursiveDecentParsing(File inputFile){
+
         try {
-            tokens = readFile();
-        } catch (IOException e) {
+
+            br = new BufferedReader(new FileReader(inputFile));
+
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
     }
 
-    private static int i;
-
-    private static ArrayList<String> readFile() throws IOException {
-
-        File input1 = new File("C:\\Users\\emeka\\Desktop\\Education\\3rd Year\\SEG2106 - Software Construction\\Assignment 3\\input3.txt");//This converts the text file into a form that Java can understand.
-        BufferedReader br = new BufferedReader(new FileReader(input1));
-        ArrayList<String> tokenList = new ArrayList<>();
-        String st;
-
-        while((st = br.readLine())!= null){//Scans through each line and adds it to the tokenList array list.
-            tokenList.add(st);
-        }
-
-        try{
-            File test = new File("C:\\Users\\emeka\\Desktop\\Education\\3rd Year\\SEG2106 - Software Construction\\Assignment 3\\input3.txt");
-        } catch (Exception e){
-            e.printStackTrace();
-        }
-
-        return tokenList;
-
-    }
-
+    /*
+    Reads the next line in the file as the next token.
+     */
     public String getNextToken(){
         String line = "";
 
@@ -51,182 +41,233 @@ public class RecursiveDecentParsing {
             e.printStackTrace();
         }
 
-        return line!=null?line: "";
-        /*
-        Note: return line!=null?line: ""; <- That is equivalent to:
         if(line!=null){
-         return line;
-        } else {
-         return "";
+            return line;
+        } else return "";
+    }
+
+
+    /**
+     This method starts the parsing of the file.
+     */
+    public boolean parse(){
+
+        token = getNextToken();
+
+        //This processes the non-terminal "program" and the checks if the last token is $ which signifies the end of the stream.
+        if (!program() || !token.equals("$")){
+            return false;
         }
-         */
-
-    }
-
-    public static void main(String[] args) throws IOException {//First pass of this method.
-        // write your code here
-/* Pseudo code for the main method.
-Procedure: main ()
-token  getNextToken();
-if (expr() == ERROR || token != “$”) then
-return ERROR;
-else
-return OK;
-*/
-tokens = readFile();
-
-//Iterates through the entire array list.
-for(int j = 0; j <tokens.size(); j++){
-    i=j;
-    token = tokens.get(i);
-
-    if(expr() == false || token.equals("$") == false){
-
-        System.out.println("Success");//Might run into the problem where it prints out multiple successes, but I'll cross that bridge when I get there.
-
-
-    } else {
-
-        System.out.println("Failure");
-        return;
-    }
-
-
-}
-
-
-
-    }
-
-    public String getNextToken(){
-        String line = "";
-
-        try {
-
-            line = br.readLine();
-
+        else {
+            return true;
         }
-        catch (IOException e) {
-            e.printStackTrace();
+    }
+
+    /**
+     * Processes the following grammar rule:
+        <program> ::= begin <statement_list> end
+     * Returns true if the corresponding grammar rule is respected and false otherwise
+     */
+    public boolean program(){
+
+        //According to the VSPL grammar given, the non-terminal "program" must start with the terminal begin.
+        if(token.equals("begin")) {
+            //If we have a match, get the next token and check if it satisfies the non-terminal "statement_list"
+            token = getNextToken();
+            if(!statementList()){
+                //If there's a syntax error while processing statement_list, return false.
+                return false;
+            }
+            else{
+                if (token.equals("end")){
+                    //If there is no syntax error after processing statement_list, the next terminal must be "end"
+                    token = getNextToken();
+                    return true;
+                }
+                else {
+                    //If the terminal "end" is not there, return false.
+                    return false;
+                }
+            }
+        }
+        else {
+            //If the terminal "begin" is not there in the first place, return false.
+            return false;
+        }
+    }
+
+
+
+    /**
+     * Processes the following grammar rule:
+     * <statement_list> ::= <statement> ; <statement_list’>
+     * Returns true if the corresponding grammar rule is respected and false otherwise
+     */
+    public boolean statementList(){
+
+        // process the statement non-terminal
+        if(!statement()){
+
+            // somewhere while processing the statement non-terminal, we had a syntax error
+            return false;
+        }
+        else if(token.equals(";")){
+            // we have a match, get next token
+            token = getNextToken();
+
+            // process the statment_list' non-terminal
+            return statementListPrime();
+        }
+        else{
+            // we are missing the ; terminal
+            return false;
+        }
+    }
+
+
+    /**
+     * Processes the following grammar rules:
+     * <statement_list’> ::= <statement_list>
+     * <statement_list’> ::= epsilon
+     * Returns true if the corresponding grammar rules are respected and false otherwise
+     */
+    public boolean statementListPrime(){
+
+        if(token.equals("end")){
+
+
+            return true;
         }
 
-        return line!=null?line: "";
+        // process the statment_list non-terminal
+        else return statementList();
+
     }
 
-    private static boolean expr(){
+    /**
+     * Processes the following grammar rule:
+     * <statement> ::= id = <expression>
+     * Returns true if the corresponding grammar rule is respected and false otherwise
+     */
+    public boolean statement(){
 
-            /*
-Procedure: expr ()
-if (term() == ERROR) then
-return ERROR;
-else return expr_prime();
-*/
+        // The statement rule must start with an id terminal
+        if(token.equals("id")){
 
-if(term() == false){
-    return false;
-} else{
+            token = getNextToken();
 
-    return exprPrime();
-}
+            if(token.equals("=")){
+
+                token = getNextToken();
+
+                return expression();
+            }
+            else {
+                //Returns false if the = terminal is missing.
+                return false;
+            }
+        }
+        else {
+
+           //Returns false if the id terminal is missing.
+            return false;
+        }
     }
 
-    private static boolean exprPrime(){
 
-        /*
-Procedure: expr_prime ()
-if (token == “+”) then
-token  getNextToken();
-return expr();
-else if (token == “-”) then
-token  getNextToken();
-return expr();
-// This is a special case where we need to process the epsilon
-// by checking against the terminal in the FOLLOW(expr’) set
-else if (token == “$”) then
-return OK;
-else return ERROR;
-*/
+    /**
+     * Processes the following grammar rule:
+     * <expression> ::= <factor> <expression’>
+     * Returns true if the corresponding grammar rule is respected and false otherwise
+     */
+    public boolean expression(){
+
+        if(!factor()){
+
+            return false;
+        }
+        else{
+            return expressionPrime();
+        }
+    }
+
+
+    /**
+     * Processes the following grammar rules:
+     * <expression’> ::= + <factor>
+     * <expression’> ::= - <factor>
+     * <expression’> ::= epsilon
+     * Returns true if the corresponding grammar rules are respected and false otherwise
+     */
+    public boolean expressionPrime(){
+
         if(token.equals("+")){
-            token = tokens.get(i);//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
-            return expr();
-        } else if(token.equals("-")){
-            token = tokens.get(i);//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
-            return expr();
-        } else if (token.equals("$")){
+
+            token = getNextToken();
+
+            return factor();
+        }
+        else if(token.equals("-")){
+
+            token = getNextToken();
+
+            return factor();
+        }
+        else if (token.equals(";")){
+
+            // Returns true since we have an epsilon rule
             return true;
-        } else {
+        }
+        else {
             return false;
         }
     }
 
-    private static boolean term(){
 
-        /*
-Procedure: term ()
-if (factor() == ERROR) then
-return ERROR;
-else return term_prime();
-*/
+    /**
+     * Process the following grammar rules:
+     * <factor> ::= id
+     * <factor> ::= num
+     * Returns true if the corresponding grammar rules are respected and false otherwise
+     */
+    public boolean factor(){
 
-        if(factor() == false){
-            return false;
-        } else {
-            return termPrime();
-        }
-    }
-
-    private static boolean termPrime(){
-
-        /*
-Procedure: term_prime()
-if (token == “*”) then
-token  getNextToken();
-return term();
-else if (token == “/”) then
-token  getNextToken();
-return term();
-// This is a special case where we need to process the epsilon
-// by checking against the terminals in the FOLLOW(term’) set
-else if (token == “$” || token==“+” || token==“-”) then
-return OK;
-else return ERROR;
-*/
-
-        if(token == "*"){
-            token = tokens.get(i);//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
-            return term();
-        } else if (token.equals("/")){
-            token = tokens.get(i);//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
-            return term();
-        } else if(token.equals("$") || token.equals("+") || token.equals("-")){
+        // the factor rule must start with the id or num
+        if (token.equals("id")) {
+            // we have a match, get next token
+            token = getNextToken();
             return true;
-        } else {
-
+        }
+        else if (token.equals("num")) {
+            // we have a match, get next token
+            token = getNextToken();
+            return true;
+        }
+        else{
+            //Returns false if both the id and num terminals are missing.
             return false;
         }
     }
 
-    private static boolean factor(){
 
-        /*
-Procedure: factor ()
-if (token == “num”) then
-token  getNextToken();
-return OK;
-else if (token == “id”) then
-token  getNextToken();
-return OK;
-else return ERROR;
-*/
-        if(token.equals("num")){
-            token = getNextToken();//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
-            return true;
-        } else if(token.equals("id")){
-            token = tokens.get(i);//Might need to delete this as i don't think it serves the right purpose. Either delete or use i+1;
-            return true;
-        } else {
-            return false;
+    public static void main(String [] args){
+
+        File file = new File("C:\\Users\\emeka\\Desktop\\Education\\3rd Year\\SEG2106 - Software Construction\\Assignment 3\\input1.txt");
+
+        if (file.isFile()){
+            RecursiveDecentParsing parser = new RecursiveDecentParsing(file);
+
+            // Parse the input file
+            boolean success = parser.parse();
+
+            // Display results
+            if (success){
+                System.out.println("SUCCESS: the code has been successfully parsed");
+            }
+            else {
+                System.out.println("ERROR: the code contains a syntax mistake");
+            }
         }
-    }
 
+    }
 }
